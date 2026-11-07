@@ -1,0 +1,16 @@
+# Normaliza finales de línea para que Windows y otros equipos no generen diffs falsos
+* text=auto
+
+*.sln  text eol=crlf
+*.cs   text
+*.sql  text
+*.md   text
+
+# Binarios: Git no intenta compararlos ni fusionarlos línea por línea
+*.pptx binary
+*.docx binary
+*.xlsx binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.db   binary

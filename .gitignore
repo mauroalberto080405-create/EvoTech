@@ -1,0 +1,48 @@
+# ===== EvoTech - archivos que NO se publican =====
+
+# Compilación de .NET / Visual Studio
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.rsuser
+*.userprefs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+TestResults/
+*.log
+
+# Paquetes NuGet descargados (se restauran solos)
+packages/
+*.nupkg
+
+# Base de datos local: se genera sola al abrir el programa.
+# Contiene datos de operación y claves: nunca se sube.
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Reportes exportados durante pruebas
+*.xlsx
+!docs/**/*.xlsx
+
+# Credenciales y configuración local
+.env
+.env.*
+secrets.json
+appsettings.*.local.json
+
+# Archivos temporales del sistema y de Office
+Thumbs.db
+desktop.ini
+.DS_Store
+~$*
+*.tmp
+
+# IDE
+.idea/
+.vscode/

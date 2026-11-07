@@ -1,0 +1,56 @@
+EVOTECH - Sistema de ventas e inventario (proyecto TiendaTech)
+Windows Forms + .NET 8 + base de datos SQLite + principios SOLID (SRP, OCP, DIP)
+
+COMO EJECUTAR
+1. Instalar Visual Studio 2022 con la carga "Desarrollo de escritorio con .NET".
+2. Descomprimir y abrir TiendaTech.sln (se necesita internet la PRIMERA vez para
+   descargar el paquete NuGet Microsoft.Data.Sqlite; Visual Studio lo hace solo).
+3. (TiendaTech.UI ya es el proyecto de inicio; si no, clic derecho > "Establecer como proyecto de inicio").
+4. Presionar F5.  Usuario: admin  Clave: 1234   (tambien: vendedor / 1234)
+
+BASE DE DATOS
+- Archivo: EvoTech.db, se crea solo la primera vez junto al .exe
+  (carpeta TiendaTech.UI\bin\Debug\net8.0-windows\).
+- Tablas (8): Usuario, Cliente, Proveedor, Producto, Venta, DetalleVenta,
+  Compra, DetalleCompra.
+- Script de creacion: BaseDatos\TiendaTech.sql
+- Para ver los datos: abrir EvoTech.db con "DB Browser for SQLite" (gratis).
+- Para volver a los datos de ejemplo: cerrar el programa y borrar EvoTech.db.
+- Los datos SE GUARDAN aunque se cierre el programa.
+
+CAPAS (4 proyectos)
+ Models   -> entidades (Cliente, Producto, Venta...)
+ Data     -> repositorios: BaseDatos\ (SQLite)  y  Memoria\ (sin BD, para demostrar DIP)
+ Business -> servicios con reglas (validaciones, descuento, stock, sesion)
+ UI       -> 12 pantallas + Program.cs (aqui se conecta todo)
+
+PANTALLAS (2 por integrante)
+ Integrante 1:  1 FrmLogin              2 FrmMenuPrincipal
+ Integrante 2:  3 FrmClientes           4 FrmUsuarios (solo admin)
+ Integrante 3:  5 FrmProductos          6 FrmStockBajo
+ Integrante 4:  7 FrmProveedores        8 FrmCompras (registrar compra, solo admin)
+ Integrante 5:  9 FrmNuevaVenta        10 FrmHistorialVentas
+ Integrante 6: 11 FrmHistorialCompras  12 FrmReporteVentas
+
+DONDE ESTA SOLID
+ SRP: cada servicio valida solo su entidad; cada repositorio solo guarda/lee;
+      las ventanas solo muestran (ej. ClienteService.cs, ClienteSqlRepository.cs).
+ OCP: Business\Descuentos.cs -> IDescuento. Nueva regla = nueva clase
+      (DescuentoCampania) sin modificar VentaService.
+ DIP: VentaService recibe IVentaRepository e IDescuento por constructor.
+      Program.cs decide las clases concretas. Cambiar *SqlRepository por
+      *MemoryRepository hace que funcione sin BD sin tocar nada mas.
+
+CAMBIOS (version 2)
+ - Login y Usuarios: el usuario y la clave no aceptan mayusculas ni espacios
+   (se bloquea al escribir y tambien lo valida AuthService/UsuarioService).
+ - Telefono (Clientes y Proveedores): solo numeros, maximo 9 digitos.
+ - Proveedores: nombre de empresa con minimo 2 caracteres.
+ - Producto tiene columna Costo. "Aumentar stock" (antes "Registrar compra")
+   usa SIEMPRE el costo guardado en la BD; el usuario ya no lo escribe.
+   Una BD antigua se actualiza sola al abrir el programa (no se borra nada):
+   se agrega la columna Costo y se toma el ultimo costo pagado en una compra.
+   Si un producto queda con costo 0, edítelo en Productos > Actualizar.
+ - Productos: clic en una fila -> Actualizar. El stock no se edita ahi
+   (solo cambia con ventas y con Aumentar stock). Columna Proveedor oculta.
+ - Reporte de ventas: boton "Exportar a Excel" (.xlsx con 4 hojas).
