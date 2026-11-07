@@ -15,8 +15,7 @@ EvoTech_Proyecto/
 │   ├── TiendaTech.UI/          12 pantallas + Program.cs (composition root)
 │   ├── BaseDatos/TiendaTech.sql  Script de las 8 tablas
 │   └── LEEME.txt               Detalle de pantallas y cambios de la versión 2
-├── docs/                       Entregas, diagramas, IC y solicitudes de cambio
-│   └── T2/                     Presentación de la T2
+├── docs/                       Guía de Git y documentación del proyecto
 └── .github/                    Plantilla de pull request
 ```
 

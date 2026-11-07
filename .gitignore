@@ -46,3 +46,6 @@ desktop.ini
 # IDE
 .idea/
 .vscode/
+
+# Presentaciones de entregas: se guardan fuera del repositorio
+EvoTech_Presentacion*.pptx
