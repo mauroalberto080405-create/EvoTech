@@ -53,10 +53,12 @@ public class ProductoMemoryRepository : MemoryRepository<Producto>, IProductoRep
 
 public class UsuarioMemoryRepository : IUsuarioRepository
 {
+    private static readonly IHasheadorClave Hash = new HasheadorPbkdf2();
+
     private readonly List<Usuario> _usuarios = new()
     {
-        new Usuario { Id = 1, NombreUsuario = "admin", Clave = "1234", Rol = "Administrador" },
-        new Usuario { Id = 2, NombreUsuario = "vendedor", Clave = "1234", Rol = "Vendedor" }
+        new Usuario { Id = 1, NombreUsuario = "admin", Clave = Hash.Hashear("1234"), Rol = "Administrador" },
+        new Usuario { Id = 2, NombreUsuario = "vendedor", Clave = Hash.Hashear("1234"), Rol = "Vendedor" }
     };
 
     public Usuario? BuscarPorNombre(string nombreUsuario) =>

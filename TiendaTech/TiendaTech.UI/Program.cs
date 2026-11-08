@@ -43,6 +43,7 @@ static class Program
         // 3. Business: servicios y regla de descuento
         //    OCP: cambiar por SinDescuento, o por: services.AddSingleton<IDescuento>(new DescuentoCampania(0.10m));
         services.AddSingleton<IDescuento, DescuentoPorMonto>();
+        services.AddSingleton<IHasheadorClave, HasheadorPbkdf2>(); // claves guardadas con hash
         services.AddSingleton<ISesion, Sesion>();
         services.AddTransient<IAuthService, AuthService>();
         services.AddTransient<IClienteService, ClienteService>();

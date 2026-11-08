@@ -90,6 +90,16 @@ CREATE TABLE IF NOT EXISTS DetalleCompra (
             if (Convert.ToInt32(cmd.ExecuteScalar()) > 0) return; // ya tiene datos
 
         using var tx = cn.BeginTransaction();
+
+        // Usuarios de demostracion: la clave se guarda como hash, nunca en texto plano
+        var hasheador = new HasheadorPbkdf2();
+        foreach (var (usuario, clave, rol) in new[] { ("admin", "1234", "Administrador"), ("vendedor", "1234", "Vendedor") })
+        {
+            using var ins = cn.Comando("INSERT INTO Usuario (NombreUsuario, Clave, Rol) VALUES (@u, @c, @r);", tx)
+                .Param("@u", usuario).Param("@c", hasheador.Hashear(clave)).Param("@r", rol);
+            ins.ExecuteNonQuery();
+        }
+
         foreach (var sentencia in DatosIniciales.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             using var cmd = cn.Comando(sentencia, tx);
@@ -101,6 +111,9 @@ CREATE TABLE IF NOT EXISTS DetalleCompra (
     // Actualiza bases de datos creadas con una versión anterior SIN borrar información
     private static void Migrar(System.Data.Common.DbConnection cn)
     {
+        // v3: las claves en texto plano pasan a hash (misma clave, ya no legible en la BD)
+        MigrarClavesAHash(cn);
+
         // v2: columna Costo en Producto (costo predefinido para "Aumentar stock")
         using (var cmd = cn.Comando("SELECT COUNT(*) FROM pragma_table_info('Producto') WHERE name = 'Costo';"))
         {
@@ -121,11 +134,27 @@ CREATE TABLE IF NOT EXISTS DetalleCompra (
         }
     }
 
-    private const string DatosIniciales = """
-INSERT INTO Usuario (NombreUsuario, Clave, Rol) VALUES
-    ('admin', '1234', 'Administrador'),
-    ('vendedor', '1234', 'Vendedor');
+    private static void MigrarClavesAHash(System.Data.Common.DbConnection cn)
+    {
+        var hasheador = new HasheadorPbkdf2();
+        var pendientes = new List<(int Id, string Clave)>();
+        using (var cmd = cn.Comando("SELECT Id, Clave FROM Usuario;"))
+        using (var r = cmd.ExecuteReader())
+            while (r.Read())
+                if (!hasheador.EsHash(r.Texto("Clave"))) pendientes.Add((r.Entero("Id"), r.Texto("Clave")));
+        if (pendientes.Count == 0) return;
 
+        using var tx = cn.BeginTransaction();
+        foreach (var (id, clave) in pendientes)
+        {
+            using var upd = cn.Comando("UPDATE Usuario SET Clave = @c WHERE Id = @id;", tx)
+                .Param("@c", hasheador.Hashear(clave)).Param("@id", id);
+            upd.ExecuteNonQuery();
+        }
+        tx.Commit();
+    }
+
+    private const string DatosIniciales = """
 INSERT INTO Cliente (Nombre, Documento, Telefono) VALUES
     ('Cliente General', '00000000', '-'),
     ('María López', '45879632', '987654321'),

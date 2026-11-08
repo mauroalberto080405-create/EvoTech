@@ -16,11 +16,13 @@ public class UsuarioService : IUsuarioService
 
     private readonly IUsuarioRepository _repo;
     private readonly ISesion _sesion;
+    private readonly IHasheadorClave _hasheador;
 
-    public UsuarioService(IUsuarioRepository repo, ISesion sesion)
+    public UsuarioService(IUsuarioRepository repo, ISesion sesion, IHasheadorClave hasheador)
     {
         _repo = repo;
         _sesion = sesion;
+        _hasheador = hasheador;
     }
 
     public List<Usuario> Listar() => _repo.ObtenerTodos();
@@ -33,6 +35,8 @@ public class UsuarioService : IUsuarioService
         if (u.Clave.Length < 4) throw new ArgumentException("La clave debe tener al menos 4 caracteres.");
         if (!Roles.Contains(u.Rol)) throw new ArgumentException("Seleccione un rol válido.");
         if (_repo.BuscarPorNombre(u.NombreUsuario) != null) throw new ArgumentException("Ese nombre de usuario ya existe.");
+        // Se guarda el hash, nunca la clave escrita
+        u.Clave = _hasheador.Hashear(u.Clave);
         _repo.Agregar(u);
     }
 
