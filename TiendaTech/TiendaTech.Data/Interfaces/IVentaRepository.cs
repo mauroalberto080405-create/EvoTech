@@ -8,4 +8,7 @@ public interface IVentaRepository
     void Agregar(Venta venta);
     List<VentaResumen> ListarResumen();
     List<DetalleVenta> ObtenerDetalles(int ventaId);
+
+    // Marca la venta como anulada y devuelve el stock de sus productos (todo o nada)
+    void Anular(int ventaId);
 }

@@ -9,5 +9,6 @@ public class Venta : IEntidad
     public List<DetalleVenta> Detalles { get; set; } = new();
     public decimal Subtotal { get; set; }
     public decimal Descuento { get; set; }
+    public bool Anulada { get; set; }   // true = venta anulada (se conserva el registro, no se borra)
     public decimal Total => Subtotal - Descuento;
 }

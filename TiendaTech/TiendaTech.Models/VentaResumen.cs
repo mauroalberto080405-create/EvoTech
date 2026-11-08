@@ -11,4 +11,6 @@ public class VentaResumen
     public decimal Subtotal { get; set; }
     public decimal Descuento { get; set; }
     public decimal Total { get; set; }
+    public bool Anulada { get; set; }
+    public string Estado => Anulada ? "Anulada" : "Activa";
 }

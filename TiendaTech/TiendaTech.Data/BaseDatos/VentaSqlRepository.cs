@@ -5,7 +5,11 @@ namespace TiendaTech.Data;
 public class VentaSqlRepository : IVentaRepository
 {
     private readonly IConexionFactory _fabrica;
-    public VentaSqlRepository(IConexionFactory fabrica) => _fabrica = fabrica;
+    public VentaSqlRepository(IConexionFactory fabrica)
+    {
+        _fabrica = fabrica;
+        EsquemaVentas.Asegurar(fabrica); // columnas Anulada y FechaAnulacion (actualiza BD antiguas sin borrar datos)
+    }
 
     // Transaccion: se guarda la venta + detalles + descuento de stock, o no se guarda nada
     public void Agregar(Venta venta)
@@ -61,18 +65,55 @@ public class VentaSqlRepository : IVentaRepository
         foreach (var d in venta.Detalles) d.Producto.Stock -= d.Cantidad; // sincroniza los objetos en pantalla
     }
 
+    // Transaccion: se marca la venta como anulada Y se devuelve el stock, o no se hace nada
+    public void Anular(int ventaId)
+    {
+        using var cn = _fabrica.Abrir();
+        using var tx = cn.BeginTransaction();
+        try
+        {
+            // Solo se anula si existe y todavia esta activa (evita devolver el stock dos veces)
+            using (var cmd = cn.Comando(
+                "UPDATE Venta SET Anulada = 1, FechaAnulacion = @fecha WHERE Id = @id AND Anulada = 0;", tx))
+            {
+                cmd.Param("@fecha", DateTime.Now.ToString(DbExtensiones.FormatoFecha)).Param("@id", ventaId);
+                if (cmd.ExecuteNonQuery() == 0)
+                    throw new InvalidOperationException("La venta no existe o ya fue anulada.");
+            }
+
+            // Devuelve al stock lo que se vendio de cada producto
+            using (var cmd = cn.Comando("""
+                UPDATE Producto
+                SET Stock = Stock + (SELECT COALESCE(SUM(d.Cantidad), 0) FROM DetalleVenta d
+                                     WHERE d.VentaId = @id AND d.ProductoId = Producto.Id)
+                WHERE Id IN (SELECT ProductoId FROM DetalleVenta WHERE VentaId = @id);
+                """, tx))
+            {
+                cmd.Param("@id", ventaId);
+                cmd.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
     public List<VentaResumen> ListarResumen()
     {
         using var cn = _fabrica.Abrir();
         using var cmd = cn.Comando("""
             SELECT v.Id, v.Fecha, c.Nombre AS Cliente, u.NombreUsuario AS Vendedor,
                    COALESCE(SUM(d.Cantidad), 0) AS Unidades,
-                   v.Subtotal, v.Descuento, v.Total
+                   v.Subtotal, v.Descuento, v.Total, v.Anulada
             FROM Venta v
             INNER JOIN Cliente c ON c.Id = v.ClienteId
             INNER JOIN Usuario u ON u.Id = v.UsuarioId
             LEFT JOIN DetalleVenta d ON d.VentaId = v.Id
-            GROUP BY v.Id, v.Fecha, c.Nombre, u.NombreUsuario, v.Subtotal, v.Descuento, v.Total
+            GROUP BY v.Id, v.Fecha, c.Nombre, u.NombreUsuario, v.Subtotal, v.Descuento, v.Total, v.Anulada
             ORDER BY v.Id DESC;
             """);
         using var r = cmd.ExecuteReader();
@@ -87,7 +128,8 @@ public class VentaSqlRepository : IVentaRepository
                 Unidades = r.Entero("Unidades"),
                 Subtotal = r.Decimal("Subtotal"),
                 Descuento = r.Decimal("Descuento"),
-                Total = r.Decimal("Total")
+                Total = r.Decimal("Total"),
+                Anulada = r.Entero("Anulada") == 1
             });
         return lista;
     }

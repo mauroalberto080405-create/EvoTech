@@ -5,7 +5,11 @@ namespace TiendaTech.Data;
 public class ReporteSqlRepository : IReporteRepository
 {
     private readonly IConexionFactory _fabrica;
-    public ReporteSqlRepository(IConexionFactory fabrica) => _fabrica = fabrica;
+    public ReporteSqlRepository(IConexionFactory fabrica)
+    {
+        _fabrica = fabrica;
+        EsquemaVentas.Asegurar(fabrica); // los reportes ignoran las ventas anuladas (columna Anulada)
+    }
 
     public List<ProductoVendido> ProductosMasVendidos(DateTime desde, DateTime hasta)
     {
@@ -15,7 +19,7 @@ public class ReporteSqlRepository : IReporteRepository
             FROM DetalleVenta d
             INNER JOIN Venta v ON v.Id = d.VentaId
             INNER JOIN Producto p ON p.Id = d.ProductoId
-            WHERE v.Fecha >= @desde AND v.Fecha < @hasta
+            WHERE v.Anulada = 0 AND v.Fecha >= @desde AND v.Fecha < @hasta
             GROUP BY p.Id, p.Nombre
             ORDER BY Unidades DESC, Importe DESC;
             """);
@@ -34,7 +38,7 @@ public class ReporteSqlRepository : IReporteRepository
             SELECT u.NombreUsuario AS Vendedor, COUNT(v.Id) AS Ventas, SUM(v.Total) AS Total
             FROM Venta v
             INNER JOIN Usuario u ON u.Id = v.UsuarioId
-            WHERE v.Fecha >= @desde AND v.Fecha < @hasta
+            WHERE v.Anulada = 0 AND v.Fecha >= @desde AND v.Fecha < @hasta
             GROUP BY u.Id, u.NombreUsuario
             ORDER BY Total DESC;
             """);
@@ -56,7 +60,7 @@ public class ReporteSqlRepository : IReporteRepository
             INNER JOIN Cliente c ON c.Id = v.ClienteId
             INNER JOIN Usuario u ON u.Id = v.UsuarioId
             LEFT JOIN DetalleVenta d ON d.VentaId = v.Id
-            WHERE v.Fecha >= @desde AND v.Fecha < @hasta
+            WHERE v.Anulada = 0 AND v.Fecha >= @desde AND v.Fecha < @hasta
             GROUP BY v.Id, v.Fecha, c.Nombre, u.NombreUsuario, v.Subtotal, v.Descuento, v.Total
             ORDER BY v.Fecha, v.Id;
             """);
