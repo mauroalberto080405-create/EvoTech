@@ -12,11 +12,13 @@ public class AuthService : IAuthService
 {
     private readonly IUsuarioRepository _repo;
     private readonly ISesion _sesion;
+    private readonly IHasheadorClave _hasheador;
 
-    public AuthService(IUsuarioRepository repo, ISesion sesion)
+    public AuthService(IUsuarioRepository repo, ISesion sesion, IHasheadorClave hasheador)
     {
         _repo = repo;
         _sesion = sesion;
+        _hasheador = hasheador;
     }
 
     public Usuario? Validar(string usuario, string clave)
@@ -28,7 +30,7 @@ public class AuthService : IAuthService
             throw new ArgumentException(Validaciones.MensajeCredencial);
 
         var u = _repo.BuscarPorNombre(usuario);
-        if (u == null || u.Clave != clave) return null;
+        if (u == null || !_hasheador.Verificar(clave, u.Clave)) return null;
         _sesion.Iniciar(u);
         return u;
     }
