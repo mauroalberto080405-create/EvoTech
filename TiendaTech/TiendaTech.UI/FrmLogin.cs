@@ -18,7 +18,7 @@ public class FrmLogin : FormBase
         _provider = provider;
 
         Text = "EvoTech - Iniciar sesión";
-        ClientSize = new Size(320, 230);
+        ClientSize = new Size(320, 205);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -36,7 +36,6 @@ public class FrmLogin : FormBase
         var btn = UiHelper.Boton(this, "Ingresar", 110, 155, 170);
         btn.Click += BtnIngresar_Click;
         AcceptButton = btn;
-        UiHelper.Etiqueta(this, "Demo: admin / 1234", 110, 195);
     }
 
     private void BtnIngresar_Click(object? sender, EventArgs e)
