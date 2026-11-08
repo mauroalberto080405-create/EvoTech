@@ -46,7 +46,7 @@ public class ProductoMemoryRepository : MemoryRepository<Producto>, IProductoRep
     public void Actualizar(Producto p)
     {
         var actual = ObtenerPorId(p.Id) ?? throw new InvalidOperationException("El producto ya no existe.");
-        actual.Nombre = p.Nombre; actual.Marca = p.Marca; actual.Precio = p.Precio; actual.Costo = p.Costo;
+        actual.Nombre = p.Nombre; actual.Marca = p.Marca; actual.Precio = p.Precio; actual.Costo = p.Costo; actual.StockMinimo = p.StockMinimo;
         actual.ProveedorId = p.ProveedorId; actual.ProveedorNombre = p.ProveedorNombre;
     }
 }

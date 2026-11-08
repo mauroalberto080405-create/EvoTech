@@ -7,7 +7,8 @@ public interface IProductoService
 {
     List<Producto> Listar();
     List<Producto> ListarDisponibles();
-    List<Producto> ListarStockBajo(int minimo);
+    List<Producto> ListarStockBajo();
+    List<Producto> Buscar(string texto);
     void Registrar(Producto producto);
     void Actualizar(Producto producto);
     void Eliminar(Producto? producto);
@@ -21,11 +22,22 @@ public class ProductoService : IProductoService
     public List<Producto> Listar() => _repo.ObtenerTodos();
     public List<Producto> ListarDisponibles() => _repo.ObtenerTodos().Where(p => p.Stock > 0).ToList();
 
-    public List<Producto> ListarStockBajo(int minimo)
+    // Stock bajo: cada producto se compara con SU propio mínimo (los más críticos primero)
+    public List<Producto> ListarStockBajo() =>
+        _repo.ObtenerTodos().Where(p => p.Stock <= p.StockMinimo)
+             .OrderBy(p => p.Stock - p.StockMinimo).ThenBy(p => p.Nombre).ToList();
+
+    // Búsqueda por nombre, marca o proveedor (sin distinguir mayúsculas)
+    public List<Producto> Buscar(string texto)
     {
-        if (minimo < 0) throw new ArgumentException("El mínimo no puede ser negativo.");
-        return _repo.ObtenerTodos().Where(p => p.Stock <= minimo).OrderBy(p => p.Stock).ToList();
+        texto = (texto ?? "").Trim();
+        var todos = _repo.ObtenerTodos();
+        if (texto.Length == 0) return todos;
+        return todos.Where(p => Contiene(p.Nombre, texto) || Contiene(p.Marca, texto) || Contiene(p.ProveedorNombre, texto)).ToList();
     }
+
+    private static bool Contiene(string? campo, string texto) =>
+        (campo ?? "").Contains(texto, StringComparison.OrdinalIgnoreCase);
 
     public void Registrar(Producto p)
     {
@@ -49,6 +61,7 @@ public class ProductoService : IProductoService
         p.Marca = (p.Marca ?? "").Trim();
         if (p.Nombre.Length == 0) throw new ArgumentException("El nombre es obligatorio.");
         if (p.Precio <= 0) throw new ArgumentException("El precio debe ser mayor a 0.");
+        if (p.StockMinimo < 0) throw new ArgumentException("El stock mínimo no puede ser negativo.");
         if (p.Costo <= 0) throw new ArgumentException("El costo debe ser mayor a 0 (se usa al aumentar stock).");
     }
 
