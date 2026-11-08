@@ -23,6 +23,13 @@ public class ProveedorMemoryRepository : MemoryRepository<Proveedor>, IProveedor
 
     public bool ExisteRuc(string ruc) => Items.Any(p => p.Ruc == ruc);
     public bool TieneMovimientos(int id) => false;
+    public Proveedor? ObtenerPorId(int id) => Items.FirstOrDefault(p => p.Id == id);
+
+    public void Actualizar(Proveedor p)
+    {
+        var actual = ObtenerPorId(p.Id) ?? throw new InvalidOperationException("El proveedor ya no existe.");
+        actual.Empresa = p.Empresa; actual.Telefono = p.Telefono;
+    }
 }
 
 public class ProductoMemoryRepository : MemoryRepository<Producto>, IProductoRepository
