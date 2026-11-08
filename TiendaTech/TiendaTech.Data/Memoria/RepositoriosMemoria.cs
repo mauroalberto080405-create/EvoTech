@@ -72,6 +72,12 @@ public class UsuarioMemoryRepository : IUsuarioRepository
         _usuarios.Add(usuario);
     }
 
+    public void ActualizarClave(int id, string nuevaClave)
+    {
+        var u = _usuarios.FirstOrDefault(x => x.Id == id);
+        if (u != null) u.Clave = nuevaClave;
+    }
+
     public void Eliminar(int id) => _usuarios.RemoveAll(u => u.Id == id);
     public bool TieneMovimientos(int id) => false;
 }

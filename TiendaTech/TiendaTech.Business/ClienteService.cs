@@ -6,6 +6,8 @@ namespace TiendaTech.Business;
 public interface IClienteService
 {
     List<Cliente> Listar();
+    // Busca por DNI/RUC o por nombre (parte del texto, sin importar mayúsculas ni tildes)
+    List<Cliente> Buscar(string? texto);
     void Registrar(Cliente cliente);
     void Eliminar(Cliente? cliente);
 }
@@ -17,6 +19,23 @@ public class ClienteService : IClienteService
     public ClienteService(IClienteRepository repo) => _repo = repo;
 
     public List<Cliente> Listar() => _repo.ObtenerTodos();
+
+    public List<Cliente> Buscar(string? texto)
+    {
+        var todos = _repo.ObtenerTodos();
+        texto = texto?.Trim();
+        if (string.IsNullOrEmpty(texto)) return todos;
+
+        return todos.Where(c =>
+            c.Documento.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
+            Normalizar(c.Nombre).Contains(Normalizar(texto), StringComparison.Ordinal)).ToList();
+    }
+
+    // "María" y "maria" deben encontrarse entre sí
+    private static string Normalizar(string s) =>
+        new string(s.Normalize(System.Text.NormalizationForm.FormD)
+            .Where(ch => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch)
+                         != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray()).ToLowerInvariant();
 
     public void Registrar(Cliente c)
     {

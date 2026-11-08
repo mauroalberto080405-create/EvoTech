@@ -7,14 +7,14 @@ namespace TiendaTech.UI;
 public class FrmClientes : FormBase
 {
     private readonly IClienteService _service;
-    private readonly TextBox _txtNombre, _txtDocumento, _txtTelefono;
+    private readonly TextBox _txtNombre, _txtDocumento, _txtTelefono, _txtBuscar;
     private readonly DataGridView _grid;
 
     public FrmClientes(IClienteService service)
     {
         _service = service;
         Text = "Clientes";
-        ClientSize = new Size(640, 420);
+        ClientSize = new Size(640, 460);
         StartPosition = FormStartPosition.CenterScreen;
 
         UiHelper.Etiqueta(this, "Nombre:", 20, 20);
@@ -31,7 +31,13 @@ public class FrmClientes : FormBase
         var btnEliminar = UiHelper.Boton(this, "Eliminar", 480, 50, 120, color: Tema.Peligro);
         btnEliminar.Click += BtnEliminar_Click;
 
-        _grid = UiHelper.Grilla(this, 20, 135, 600, 265);
+        // Búsqueda por DNI/RUC o por nombre (se filtra mientras se escribe)
+        UiHelper.Etiqueta(this, "Buscar:", 20, 143);
+        _txtBuscar = UiHelper.Caja(this, 100, 139, 200);
+        UiHelper.Etiqueta(this, "DNI o nombre", 315, 143).ForeColor = Tema.Gris;
+        _txtBuscar.TextChanged += (_, _) => Cargar();
+
+        _grid = UiHelper.Grilla(this, 20, 175, 600, 265);
         UiHelper.Columna(_grid, "Id", "Id", peso: 30);
         UiHelper.Columna(_grid, "Nombre", "Nombre", peso: 150);
         UiHelper.Columna(_grid, "Documento", "DNI / RUC");
@@ -39,7 +45,7 @@ public class FrmClientes : FormBase
         Cargar();
     }
 
-    private void Cargar() => _grid.DataSource = _service.Listar();
+    private void Cargar() => _grid.DataSource = _service.Buscar(_txtBuscar.Text);
 
     private void BtnGuardar_Click(object? sender, EventArgs e)
     {
