@@ -5,13 +5,17 @@ namespace TiendaTech.Data;
 public class ProductoSqlRepository : IProductoRepository
 {
     private readonly IConexionFactory _fabrica;
-    public ProductoSqlRepository(IConexionFactory fabrica) => _fabrica = fabrica;
+    public ProductoSqlRepository(IConexionFactory fabrica)
+    {
+        _fabrica = fabrica;
+        EsquemaProductos.Asegurar(fabrica); // columna StockMinimo (actualiza BD antiguas sin borrar datos)
+    }
 
     public List<Producto> ObtenerTodos()
     {
         using var cn = _fabrica.Abrir();
         using var cmd = cn.Comando("""
-            SELECT p.Id, p.Nombre, p.Marca, p.Precio, p.Costo, p.Stock, p.ProveedorId,
+            SELECT p.Id, p.Nombre, p.Marca, p.Precio, p.Costo, p.Stock, p.StockMinimo, p.ProveedorId,
                    COALESCE(pr.Empresa, '') AS ProveedorNombre
             FROM Producto p
             LEFT JOIN Proveedor pr ON pr.Id = p.ProveedorId
@@ -27,7 +31,7 @@ public class ProductoSqlRepository : IProductoRepository
     {
         using var cn = _fabrica.Abrir();
         using var cmd = cn.Comando("""
-            SELECT p.Id, p.Nombre, p.Marca, p.Precio, p.Costo, p.Stock, p.ProveedorId,
+            SELECT p.Id, p.Nombre, p.Marca, p.Precio, p.Costo, p.Stock, p.StockMinimo, p.ProveedorId,
                    COALESCE(pr.Empresa, '') AS ProveedorNombre
             FROM Producto p
             LEFT JOIN Proveedor pr ON pr.Id = p.ProveedorId
@@ -45,6 +49,7 @@ public class ProductoSqlRepository : IProductoRepository
         Precio = r.Decimal("Precio"),
         Costo = r.Decimal("Costo"),
         Stock = r.Entero("Stock"),
+        StockMinimo = r.Entero("StockMinimo"),
         ProveedorId = r.EnteroNulo("ProveedorId"),
         ProveedorNombre = r.Texto("ProveedorNombre")
     };
@@ -55,11 +60,11 @@ public class ProductoSqlRepository : IProductoRepository
         using var cn = _fabrica.Abrir();
         using var cmd = cn.Comando("""
             UPDATE Producto
-            SET Nombre = @nombre, Marca = @marca, Precio = @precio, Costo = @costo, ProveedorId = @prov
+            SET Nombre = @nombre, Marca = @marca, Precio = @precio, Costo = @costo, StockMinimo = @minimo, ProveedorId = @prov
             WHERE Id = @id;
             """)
             .Param("@nombre", p.Nombre).Param("@marca", p.Marca).Param("@precio", p.Precio)
-            .Param("@costo", p.Costo).Param("@prov", p.ProveedorId).Param("@id", p.Id);
+            .Param("@costo", p.Costo).Param("@minimo", p.StockMinimo).Param("@prov", p.ProveedorId).Param("@id", p.Id);
         if (cmd.ExecuteNonQuery() == 0) throw new InvalidOperationException("El producto ya no existe.");
     }
 
@@ -67,11 +72,11 @@ public class ProductoSqlRepository : IProductoRepository
     {
         using var cn = _fabrica.Abrir();
         using var cmd = cn.Comando("""
-            INSERT INTO Producto (Nombre, Marca, Precio, Costo, Stock, ProveedorId)
-            VALUES (@nombre, @marca, @precio, @costo, @stock, @prov);
+            INSERT INTO Producto (Nombre, Marca, Precio, Costo, Stock, StockMinimo, ProveedorId)
+            VALUES (@nombre, @marca, @precio, @costo, @stock, @minimo, @prov);
             """)
             .Param("@nombre", p.Nombre).Param("@marca", p.Marca).Param("@precio", p.Precio).Param("@costo", p.Costo)
-            .Param("@stock", p.Stock).Param("@prov", p.ProveedorId);
+            .Param("@stock", p.Stock).Param("@minimo", p.StockMinimo).Param("@prov", p.ProveedorId);
         cmd.ExecuteNonQuery();
         p.Id = cn.UltimoId();
     }

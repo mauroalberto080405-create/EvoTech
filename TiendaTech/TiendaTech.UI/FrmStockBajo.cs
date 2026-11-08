@@ -7,7 +7,6 @@ namespace TiendaTech.UI;
 public class FrmStockBajo : FormBase
 {
     private readonly IProductoService _service;
-    private readonly NumericUpDown _nudMinimo;
     private readonly DataGridView _grid;
     private readonly Label _lblResumen;
 
@@ -18,10 +17,9 @@ public class FrmStockBajo : FormBase
         ClientSize = new Size(700, 460);
         StartPosition = FormStartPosition.CenterScreen;
 
-        UiHelper.Etiqueta(this, "Stock menor o igual a:", 20, 22);
-        _nudMinimo = new NumericUpDown { Left = 300, Top = 18, Width = 70, Maximum = 1000, Value = 10 };
-        Controls.Add(_nudMinimo);
-        var btn = UiHelper.Boton(this, "Consultar", 390, 14, 120, color: Tema.Secundario);
+        var lblInfo = UiHelper.Etiqueta(this, "Se listan los productos cuyo stock es menor o igual a su stock mínimo (se define en Productos).", 20, 22);
+        lblInfo.ForeColor = Tema.Gris;
+        var btn = UiHelper.Boton(this, "Actualizar", 560, 14, 120, color: Tema.Secundario);
         btn.Click += (_, _) => Cargar();
 
         _grid = UiHelper.Grilla(this, 20, 60, 660, 340);
@@ -29,6 +27,7 @@ public class FrmStockBajo : FormBase
         UiHelper.Columna(_grid, "Nombre", "Producto", peso: 150);
         UiHelper.Columna(_grid, "Marca", "Marca", peso: 70);
         UiHelper.Columna(_grid, "Stock", "Stock", peso: 45);
+        UiHelper.Columna(_grid, "StockMinimo", "Mínimo", peso: 45);
         UiHelper.Columna(_grid, "ProveedorNombre", "Proveedor", peso: 150);
         _grid.CellFormatting += PintarAgotados;
 
@@ -43,10 +42,10 @@ public class FrmStockBajo : FormBase
     {
         try
         {
-            var lista = _service.ListarStockBajo((int)_nudMinimo.Value);
+            var lista = _service.ListarStockBajo();
             _grid.DataSource = lista;
             _lblResumen.Text = lista.Count == 0
-                ? "Todo el inventario está sobre el mínimo."
+                ? "Todo el inventario está sobre su mínimo."
                 : $"{lista.Count} producto(s) necesitan reposición.";
         }
         catch (ArgumentException ex) { UiHelper.Error(ex.Message); }

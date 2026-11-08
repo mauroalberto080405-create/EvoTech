@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS Producto (
     Precio      DECIMAL(10,2) NOT NULL CHECK (Precio > 0),
     Costo       DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (Costo >= 0),
     Stock       INTEGER       NOT NULL CHECK (Stock >= 0),
+    StockMinimo INTEGER       NOT NULL DEFAULT 5 CHECK (StockMinimo >= 0),
     ProveedorId INTEGER       REFERENCES Proveedor(Id)
 );
 
