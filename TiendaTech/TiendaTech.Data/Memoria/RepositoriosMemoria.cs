@@ -92,11 +92,19 @@ public class VentaMemoryRepository : IVentaRepository
             Id = v.Id, Fecha = v.Fecha,
             Cliente = v.Cliente?.Nombre ?? "", Vendedor = v.Vendedor?.NombreUsuario ?? "",
             Unidades = v.Detalles.Sum(d => d.Cantidad),
-            Subtotal = v.Subtotal, Descuento = v.Descuento, Total = v.Total
+            Subtotal = v.Subtotal, Descuento = v.Descuento, Total = v.Total, Anulada = v.Anulada
         }).ToList();
 
     public List<DetalleVenta> ObtenerDetalles(int ventaId) =>
         _ventas.FirstOrDefault(v => v.Id == ventaId)?.Detalles.ToList() ?? new();
+
+    public void Anular(int ventaId)
+    {
+        var venta = _ventas.FirstOrDefault(v => v.Id == ventaId);
+        if (venta == null || venta.Anulada) throw new InvalidOperationException("La venta no existe o ya fue anulada.");
+        foreach (var d in venta.Detalles) d.Producto.Stock += d.Cantidad; // devuelve el stock
+        venta.Anulada = true;
+    }
 }
 
 public class CompraMemoryRepository : ICompraRepository
@@ -134,7 +142,7 @@ public class ReporteMemoryRepository : IReporteRepository
     public ReporteMemoryRepository(IVentaRepository ventas) => _ventas = ventas;
 
     private List<VentaResumen> EnRango(DateTime desde, DateTime hasta) => _ventas.ListarResumen()
-        .Where(v => v.Fecha >= desde.Date && v.Fecha < hasta.Date.AddDays(1)).ToList();
+        .Where(v => !v.Anulada && v.Fecha >= desde.Date && v.Fecha < hasta.Date.AddDays(1)).ToList();
 
     public List<ProductoVendido> ProductosMasVendidos(DateTime desde, DateTime hasta) => EnRango(desde, hasta)
         .SelectMany(v => _ventas.ObtenerDetalles(v.Id))

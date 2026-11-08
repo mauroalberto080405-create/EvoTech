@@ -9,6 +9,7 @@ public interface IVentaService
     Venta Registrar(Cliente? cliente, List<DetalleVenta> detalles);
     List<VentaResumen> ListarHistorial();
     List<DetalleVenta> ObtenerDetalles(int ventaId);
+    void Anular(int ventaId);
 }
 
 public class VentaService : IVentaService
@@ -28,6 +29,15 @@ public class VentaService : IVentaService
     public decimal CalcularDescuento(decimal subtotal) => _descuento.Calcular(subtotal);
     public List<VentaResumen> ListarHistorial() => _repo.ListarResumen();
     public List<DetalleVenta> ObtenerDetalles(int ventaId) => _repo.ObtenerDetalles(ventaId);
+
+    // Anula la venta: devuelve el stock y la deja marcada como anulada (no se borra)
+    public void Anular(int ventaId)
+    {
+        if (ventaId <= 0) throw new ArgumentException("Seleccione una venta.");
+        if (_sesion.UsuarioActual == null) throw new ArgumentException("No hay un usuario con sesión iniciada.");
+
+        _repo.Anular(ventaId); // el repositorio valida que exista y que no esté anulada
+    }
 
     public Venta Registrar(Cliente? cliente, List<DetalleVenta> detalles)
     {

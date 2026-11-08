@@ -42,7 +42,9 @@ CREATE TABLE IF NOT EXISTS Venta (
     UsuarioId INTEGER       NOT NULL REFERENCES Usuario(Id),
     Subtotal  DECIMAL(10,2) NOT NULL,
     Descuento DECIMAL(10,2) NOT NULL,
-    Total     DECIMAL(10,2) NOT NULL
+    Total     DECIMAL(10,2) NOT NULL,
+    Anulada   INTEGER       NOT NULL DEFAULT 0,  -- 0 = activa, 1 = anulada (T3, ver EsquemaVentas.cs)
+    FechaAnulacion TEXT
 );
 
 CREATE TABLE IF NOT EXISTS DetalleVenta (
