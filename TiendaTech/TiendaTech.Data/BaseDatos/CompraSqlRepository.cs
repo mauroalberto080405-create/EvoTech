@@ -5,7 +5,21 @@ namespace TiendaTech.Data;
 public class CompraSqlRepository : ICompraRepository
 {
     private readonly IConexionFactory _fabrica;
-    public CompraSqlRepository(IConexionFactory fabrica) => _fabrica = fabrica;
+    public CompraSqlRepository(IConexionFactory fabrica)
+    {
+        _fabrica = fabrica;
+        EsquemaCompras.Asegurar(fabrica); // columna NumeroDocumento (actualiza BD antiguas sin borrar datos)
+    }
+
+    public bool ExisteDocumento(int proveedorId, string numeroDocumento)
+    {
+        using var cn = _fabrica.Abrir();
+        using var cmd = cn.Comando("""
+            SELECT COUNT(*) FROM Compra
+            WHERE ProveedorId = @proveedor AND NumeroDocumento = @documento;
+            """).Param("@proveedor", proveedorId).Param("@documento", numeroDocumento);
+        return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+    }
 
     // Transaccion: compra + detalles + aumento de stock
     public void Agregar(Compra compra)
@@ -15,13 +29,13 @@ public class CompraSqlRepository : ICompraRepository
         try
         {
             using (var cmd = cn.Comando("""
-                INSERT INTO Compra (Fecha, ProveedorId, UsuarioId, Total)
-                VALUES (@fecha, @proveedor, @usuario, @total);
+                INSERT INTO Compra (Fecha, ProveedorId, UsuarioId, Total, NumeroDocumento)
+                VALUES (@fecha, @proveedor, @usuario, @total, @documento);
                 """, tx))
             {
                 cmd.Param("@fecha", compra.Fecha.ToString(DbExtensiones.FormatoFecha))
                    .Param("@proveedor", compra.Proveedor!.Id).Param("@usuario", compra.Usuario!.Id)
-                   .Param("@total", compra.Total);
+                   .Param("@total", compra.Total).Param("@documento", compra.NumeroDocumento);
                 cmd.ExecuteNonQuery();
             }
             compra.Id = cn.UltimoId(tx);
@@ -63,13 +77,13 @@ public class CompraSqlRepository : ICompraRepository
     {
         using var cn = _fabrica.Abrir();
         using var cmd = cn.Comando("""
-            SELECT c.Id, c.Fecha, p.Empresa AS Proveedor, u.NombreUsuario AS Usuario,
+            SELECT c.Id, c.Fecha, p.Empresa AS Proveedor, c.NumeroDocumento, u.NombreUsuario AS Usuario,
                    COALESCE(SUM(d.Cantidad), 0) AS Unidades, c.Total
             FROM Compra c
             INNER JOIN Proveedor p ON p.Id = c.ProveedorId
             INNER JOIN Usuario u ON u.Id = c.UsuarioId
             LEFT JOIN DetalleCompra d ON d.CompraId = c.Id
-            GROUP BY c.Id, c.Fecha, p.Empresa, u.NombreUsuario, c.Total
+            GROUP BY c.Id, c.Fecha, p.Empresa, c.NumeroDocumento, u.NombreUsuario, c.Total
             ORDER BY c.Id DESC;
             """);
         using var r = cmd.ExecuteReader();
@@ -80,6 +94,7 @@ public class CompraSqlRepository : ICompraRepository
                 Id = r.Entero("Id"),
                 Fecha = r.Fecha("Fecha"),
                 Proveedor = r.Texto("Proveedor"),
+                NumeroDocumento = r.Texto("NumeroDocumento"), // "" en compras anteriores a esta mejora
                 Usuario = r.Texto("Usuario"),
                 Unidades = r.Entero("Unidades"),
                 Total = r.Decimal("Total")

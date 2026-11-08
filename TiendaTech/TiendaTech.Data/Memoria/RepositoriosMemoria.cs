@@ -96,6 +96,9 @@ public class CompraMemoryRepository : ICompraRepository
 {
     private readonly List<Compra> _compras = new();
 
+    public bool ExisteDocumento(int proveedorId, string numeroDocumento) =>
+        _compras.Any(c => c.Proveedor?.Id == proveedorId && c.NumeroDocumento == numeroDocumento);
+
     public void Agregar(Compra compra)
     {
         compra.Id = _compras.Count + 1;
@@ -108,7 +111,8 @@ public class CompraMemoryRepository : ICompraRepository
         .Select(c => new CompraResumen
         {
             Id = c.Id, Fecha = c.Fecha,
-            Proveedor = c.Proveedor?.Empresa ?? "", Usuario = c.Usuario?.NombreUsuario ?? "",
+            Proveedor = c.Proveedor?.Empresa ?? "", NumeroDocumento = c.NumeroDocumento,
+            Usuario = c.Usuario?.NombreUsuario ?? "",
             Unidades = c.Detalles.Sum(d => d.Cantidad), Total = c.Total
         }).ToList();
 

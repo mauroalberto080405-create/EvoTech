@@ -59,8 +59,13 @@ CREATE TABLE IF NOT EXISTS Compra (
     Fecha       TEXT          NOT NULL,
     ProveedorId INTEGER       NOT NULL REFERENCES Proveedor(Id),
     UsuarioId   INTEGER       NOT NULL REFERENCES Usuario(Id),
-    Total       DECIMAL(10,2) NOT NULL
+    Total       DECIMAL(10,2) NOT NULL,
+    NumeroDocumento TEXT      -- N° de factura/guía del proveedor (v3, ver EsquemaCompras.cs)
 );
+
+-- Un proveedor no puede tener dos ingresos con el mismo N° de factura/guía
+CREATE UNIQUE INDEX IF NOT EXISTS UX_Compra_Proveedor_Documento
+    ON Compra (ProveedorId, NumeroDocumento) WHERE NumeroDocumento IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS DetalleCompra (
     Id            INTEGER PRIMARY KEY AUTOINCREMENT,

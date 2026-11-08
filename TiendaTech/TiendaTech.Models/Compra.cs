@@ -7,6 +7,8 @@ public class Compra : IEntidad
     public DateTime Fecha { get; set; } = DateTime.Now;
     public Proveedor? Proveedor { get; set; }
     public Usuario? Usuario { get; set; }
+    // N° de la factura o guía de remisión del proveedor (ej. F001-000123). Permite cruzar el ingreso con el documento físico.
+    public string NumeroDocumento { get; set; } = "";
     public List<DetalleCompra> Detalles { get; set; } = new();
     public decimal Total => Detalles.Sum(d => d.Subtotal);
 }
@@ -25,6 +27,7 @@ public class CompraResumen
     public int Id { get; set; }
     public DateTime Fecha { get; set; }
     public string Proveedor { get; set; } = "";
+    public string NumeroDocumento { get; set; } = "";
     public string Usuario { get; set; } = "";
     public int Unidades { get; set; }
     public decimal Total { get; set; }
