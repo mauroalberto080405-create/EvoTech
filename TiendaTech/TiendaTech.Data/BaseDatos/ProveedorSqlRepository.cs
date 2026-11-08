@@ -33,6 +33,24 @@ public class ProveedorSqlRepository : IProveedorRepository
         p.Id = cn.UltimoId();
     }
 
+    public Proveedor? ObtenerPorId(int id)
+    {
+        using var cn = _fabrica.Abrir();
+        using var cmd = cn.Comando("SELECT Id, Empresa, Ruc, Telefono FROM Proveedor WHERE Id = @id;").Param("@id", id);
+        using var r = cmd.ExecuteReader();
+        if (!r.Read()) return null;
+        return new Proveedor { Id = r.Entero("Id"), Empresa = r.Texto("Empresa"), Ruc = r.Texto("Ruc"), Telefono = r.Texto("Telefono") };
+    }
+
+    // Edita empresa y teléfono. El RUC no se cambia: identifica al proveedor en compras y productos.
+    public void Actualizar(Proveedor p)
+    {
+        using var cn = _fabrica.Abrir();
+        using var cmd = cn.Comando("UPDATE Proveedor SET Empresa = @empresa, Telefono = @tel WHERE Id = @id;")
+            .Param("@empresa", p.Empresa).Param("@tel", p.Telefono).Param("@id", p.Id);
+        if (cmd.ExecuteNonQuery() == 0) throw new InvalidOperationException("El proveedor ya no existe.");
+    }
+
     public bool ExisteRuc(string ruc)
     {
         using var cn = _fabrica.Abrir();
