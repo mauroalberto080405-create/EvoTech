@@ -155,14 +155,22 @@ public class ReporteMemoryRepository : IReporteRepository
     public List<ProductoVendido> ProductosMasVendidos(DateTime desde, DateTime hasta) => EnRango(desde, hasta)
         .SelectMany(v => _ventas.ObtenerDetalles(v.Id))
         .GroupBy(d => d.NombreProducto)
-        .Select(g => new ProductoVendido { Producto = g.Key, Unidades = g.Sum(d => d.Cantidad), Importe = g.Sum(d => d.Subtotal) })
+        .Select(g => new ProductoVendido { Producto = g.Key, Unidades = g.Sum(d => d.Cantidad), Importe = g.Sum(d => d.Subtotal), Ganancia = g.Sum(d => d.Ganancia) })
         .OrderByDescending(p => p.Unidades).ThenByDescending(p => p.Importe).ToList();
 
-    public List<VentaResumen> VentasEnRango(DateTime desde, DateTime hasta) =>
-        EnRango(desde, hasta).OrderBy(v => v.Fecha).ThenBy(v => v.Id).ToList();
+    public List<VentaResumen> VentasEnRango(DateTime desde, DateTime hasta)
+    {
+        var lista = EnRango(desde, hasta).OrderBy(v => v.Fecha).ThenBy(v => v.Id).ToList();
+        foreach (var v in lista) v.Ganancia = _ventas.ObtenerDetalles(v.Id).Sum(d => d.Ganancia);
+        return lista;
+    }
+
+    public DateTime? FechaUltimaVenta() =>
+        _ventas.ListarResumen().Where(v => !v.Anulada).Select(v => (DateTime?)v.Fecha).Max();
 
     public List<VentasPorVendedor> VentasPorVendedor(DateTime desde, DateTime hasta) => EnRango(desde, hasta)
         .GroupBy(v => v.Vendedor)
-        .Select(g => new VentasPorVendedor { Vendedor = g.Key, Ventas = g.Count(), Total = g.Sum(v => v.Total) })
+        .Select(g => new VentasPorVendedor { Vendedor = g.Key, Ventas = g.Count(), Total = g.Sum(v => v.Total),
+            Ganancia = g.Sum(v => _ventas.ObtenerDetalles(v.Id).Sum(d => d.Ganancia)) })
         .OrderByDescending(v => v.Total).ToList();
 }

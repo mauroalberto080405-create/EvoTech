@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS DetalleVenta (
     ProductoId     INTEGER       NOT NULL REFERENCES Producto(Id),
     Cantidad       INTEGER       NOT NULL CHECK (Cantidad > 0),
     PrecioUnitario DECIMAL(10,2) NOT NULL,
+    CostoUnitario  DECIMAL(10,2) NOT NULL DEFAULT 0,
     Subtotal       DECIMAL(10,2) NOT NULL
 );
 

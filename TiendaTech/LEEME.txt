@@ -54,3 +54,15 @@ CAMBIOS (version 2)
  - Productos: clic en una fila -> Actualizar. El stock no se edita ahi
    (solo cambia con ventas y con Aumentar stock). Columna Proveedor oculta.
  - Reporte de ventas: boton "Exportar a Excel" (.xlsx con 4 hojas).
+
+CAMBIOS (version 3)
+ - Reporte de ventas con GANANCIA: ganancia = (precio - costo) x cantidad.
+   Se muestra por producto, por vendedor y en el resumen inferior, y tambien
+   se exporta a Excel (columna "Ganancia (S/)" en las 4 hojas). El costo se
+   guarda en cada venta (DetalleVenta.CostoUnitario), asi la ganancia historica
+   no cambia si despues se modifica el costo del producto. La ganancia no
+   descuenta el "Descuento" de la venta (es margen bruto por producto).
+   Una BD antigua se actualiza sola: las ventas viejas toman el costo actual.
+ - Reporte de ventas: el rango por defecto ya no sale vacio. Si este mes hay
+   ventas va del 1 del mes a hoy; si no, empieza el 1 del mes de la ultima venta.
+

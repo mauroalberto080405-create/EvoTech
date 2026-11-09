@@ -18,12 +18,17 @@ public class FrmReporteVentas : FormBase
         ClientSize = new Size(860, 520);
         StartPosition = FormStartPosition.CenterScreen;
 
+        // El rango inicial siempre incluye la última venta registrada (la pantalla no se abre vacía)
         var hoy = DateTime.Today;
+        var rango = (Desde: new DateTime(hoy.Year, hoy.Month, 1), Hasta: hoy);
+        try { rango = _reportes.RangoPorDefecto(); }
+        catch (Exception ex) { UiHelper.ErrorBd(ex); }
+
         UiHelper.Etiqueta(this, "Desde:", 20, 22);
-        _dtpDesde = new DateTimePicker { Left = 70, Top = 18, Width = 130, Format = DateTimePickerFormat.Short, Value = new DateTime(hoy.Year, hoy.Month, 1) };
+        _dtpDesde = new DateTimePicker { Left = 70, Top = 18, Width = 130, Format = DateTimePickerFormat.Short, Value = rango.Desde };
         Controls.Add(_dtpDesde);
         UiHelper.Etiqueta(this, "Hasta:", 220, 22);
-        _dtpHasta = new DateTimePicker { Left = 270, Top = 18, Width = 130, Format = DateTimePickerFormat.Short, Value = hoy };
+        _dtpHasta = new DateTimePicker { Left = 270, Top = 18, Width = 130, Format = DateTimePickerFormat.Short, Value = rango.Hasta };
         Controls.Add(_dtpHasta);
         var btn = UiHelper.Boton(this, "Generar reporte", 420, 14, 150, color: Tema.Secundario);
         btn.Click += (_, _) => Generar();
@@ -32,15 +37,17 @@ public class FrmReporteVentas : FormBase
 
         UiHelper.Etiqueta(this, "Productos más vendidos", 20, 65).Font = new Font("Segoe UI", 10, FontStyle.Bold);
         _gridProductos = UiHelper.Grilla(this, 20, 90, 480, 370);
-        UiHelper.Columna(_gridProductos, "Producto", "Producto", peso: 180);
-        UiHelper.Columna(_gridProductos, "Unidades", "Unidades", peso: 60);
-        UiHelper.Columna(_gridProductos, "Importe", "Importe S/", "N2", 80);
+        UiHelper.Columna(_gridProductos, "Producto", "Producto", peso: 150);
+        UiHelper.Columna(_gridProductos, "Unidades", "Unid.", peso: 45);
+        UiHelper.Columna(_gridProductos, "Importe", "Importe S/", "N2", 70);
+        UiHelper.Columna(_gridProductos, "Ganancia", "Ganancia S/", "N2", 70);
 
         UiHelper.Etiqueta(this, "Ventas por vendedor", 520, 65).Font = new Font("Segoe UI", 10, FontStyle.Bold);
         _gridVendedores = UiHelper.Grilla(this, 520, 90, 320, 370);
-        UiHelper.Columna(_gridVendedores, "Vendedor", "Vendedor", peso: 100);
-        UiHelper.Columna(_gridVendedores, "Ventas", "N° ventas", peso: 60);
-        UiHelper.Columna(_gridVendedores, "Total", "Total S/", "N2", 80);
+        UiHelper.Columna(_gridVendedores, "Vendedor", "Vendedor", peso: 80);
+        UiHelper.Columna(_gridVendedores, "Ventas", "N° ventas", peso: 50);
+        UiHelper.Columna(_gridVendedores, "Total", "Total S/", "N2", 65);
+        UiHelper.Columna(_gridVendedores, "Ganancia", "Ganancia S/", "N2", 70);
 
         _lblResumen = UiHelper.Etiqueta(this, "", 20, 478);
         _lblResumen.Font = new Font("Segoe UI", 11, FontStyle.Bold);
@@ -98,7 +105,8 @@ public class FrmReporteVentas : FormBase
             _gridProductos.DataSource = productos;
             _gridVendedores.DataSource = vendedores;
             _lblResumen.Text = $"Ventas en el periodo: {vendedores.Sum(v => v.Ventas)}     " +
-                               $"Total vendido: S/ {vendedores.Sum(v => v.Total):N2}";
+                               $"Total vendido: S/ {vendedores.Sum(v => v.Total):N2}     " +
+                               $"Ganancia: S/ {vendedores.Sum(v => v.Ganancia):N2}";
         }
         catch (ArgumentException ex) { UiHelper.Error(ex.Message); }
         catch (Exception ex) { UiHelper.ErrorBd(ex); }
