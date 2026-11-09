@@ -33,6 +33,8 @@ public class FrmUsuarios : FormBase
         btn.Click += BtnGuardar_Click;
         var btnEliminar = UiHelper.Boton(this, "Eliminar", 480, 50, 120, color: Tema.Peligro);
         btnEliminar.Click += BtnEliminar_Click;
+        var btnClave = UiHelper.Boton(this, "Cambiar mi clave", 340, 86, 260, color: Tema.Secundario);
+        btnClave.Click += (_, _) => { using var f = new FrmCambiarClave(_service); f.ShowDialog(this); };
 
         _grid = UiHelper.Grilla(this, 20, 135, 600, 265);
         UiHelper.Columna(_grid, "Id", "Id", peso: 30);
@@ -57,6 +59,7 @@ public class FrmUsuarios : FormBase
             Cargar();
         }
         catch (ArgumentException ex) { UiHelper.Error(ex.Message); }
+        catch (UnauthorizedAccessException ex) { UiHelper.Error(ex.Message); }
         catch (Exception ex) { UiHelper.ErrorBd(ex); }
     }
 
@@ -70,6 +73,7 @@ public class FrmUsuarios : FormBase
             Cargar();
         }
         catch (ArgumentException ex) { UiHelper.Error(ex.Message); }
+        catch (UnauthorizedAccessException ex) { UiHelper.Error(ex.Message); }
         catch (Exception ex) { UiHelper.ErrorBd(ex); }
     }
 }

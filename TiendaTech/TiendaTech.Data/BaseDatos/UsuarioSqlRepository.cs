@@ -51,6 +51,14 @@ public class UsuarioSqlRepository : IUsuarioRepository
         u.Id = cn.UltimoId();
     }
 
+    public void ActualizarClave(int id, string nuevaClave)
+    {
+        using var cn = _fabrica.Abrir();
+        using var cmd = cn.Comando("UPDATE Usuario SET Clave = @clave WHERE Id = @id;")
+            .Param("@clave", nuevaClave).Param("@id", id);
+        cmd.ExecuteNonQuery();
+    }
+
     public void Eliminar(int id)
     {
         using var cn = _fabrica.Abrir();
