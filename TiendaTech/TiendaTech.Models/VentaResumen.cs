@@ -13,4 +13,5 @@ public class VentaResumen
     public decimal Total { get; set; }
     public bool Anulada { get; set; }
     public string Estado => Anulada ? "Anulada" : "Activa";
+    public decimal Ganancia { get; set; }   // solo se llena en los reportes
 }
