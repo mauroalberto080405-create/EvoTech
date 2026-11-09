@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS DetalleVenta (
     ProductoId     INTEGER       NOT NULL REFERENCES Producto(Id),
     Cantidad       INTEGER       NOT NULL CHECK (Cantidad > 0),
     PrecioUnitario DECIMAL(10,2) NOT NULL,
+    CostoUnitario  DECIMAL(10,2) NOT NULL DEFAULT 0,
     Subtotal       DECIMAL(10,2) NOT NULL
 );
 
@@ -132,6 +133,26 @@ CREATE TABLE IF NOT EXISTS DetalleCompra (
                 upd.ExecuteNonQuery();
             }
         }
+
+        // v3: costo al momento de la venta (para calcular la ganancia)
+        if (!ExisteColumna(cn, "DetalleVenta", "CostoUnitario"))
+        {
+            using (var alter = cn.Comando("ALTER TABLE DetalleVenta ADD COLUMN CostoUnitario DECIMAL(10,2) NOT NULL DEFAULT 0;"))
+                alter.ExecuteNonQuery();
+
+            // Las ventas antiguas no guardaron el costo: se usa el costo actual del producto
+            using var upd = cn.Comando("""
+                UPDATE DetalleVenta
+                SET CostoUnitario = COALESCE((SELECT p.Costo FROM Producto p WHERE p.Id = DetalleVenta.ProductoId), 0);
+                """);
+            upd.ExecuteNonQuery();
+        }
+    }
+
+    private static bool ExisteColumna(System.Data.Common.DbConnection cn, string tabla, string columna)
+    {
+        using var cmd = cn.Comando($"SELECT COUNT(*) FROM pragma_table_info('{tabla}') WHERE name = '{columna}';");
+        return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
     }
 
     private static void MigrarClavesAHash(System.Data.Common.DbConnection cn)
@@ -180,10 +201,10 @@ INSERT INTO Venta (Fecha, ClienteId, UsuarioId, Subtotal, Descuento, Total) VALU
     ('2026-10-15 10:24:00', 2, 2, 1280, 64, 1216),
     ('2026-10-16 17:05:00', 3, 2, 300, 0, 300);
 
-INSERT INTO DetalleVenta (VentaId, ProductoId, Cantidad, PrecioUnitario, Subtotal) VALUES
-    (1, 1, 1, 1200, 1200),
-    (1, 4, 1, 80, 80),
-    (2, 3, 2, 150, 300);
+INSERT INTO DetalleVenta (VentaId, ProductoId, Cantidad, PrecioUnitario, CostoUnitario, Subtotal) VALUES
+    (1, 1, 1, 1200, 950, 1200),
+    (1, 4, 1, 80, 55, 80),
+    (2, 3, 2, 150, 95, 300);
 
 INSERT INTO Compra (Fecha, ProveedorId, UsuarioId, Total) VALUES
     ('2026-10-14 09:00:00', 3, 1, 1510);

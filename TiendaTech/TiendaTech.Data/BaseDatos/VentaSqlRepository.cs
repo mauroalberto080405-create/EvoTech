@@ -34,8 +34,9 @@ public class VentaSqlRepository : IVentaRepository
             foreach (var d in venta.Detalles)
             {
                 using (var cmd = cn.Comando("""
-                    INSERT INTO DetalleVenta (VentaId, ProductoId, Cantidad, PrecioUnitario, Subtotal)
-                    VALUES (@venta, @producto, @cantidad, @precio, @subtotal);
+                    INSERT INTO DetalleVenta (VentaId, ProductoId, Cantidad, PrecioUnitario, CostoUnitario, Subtotal)
+                    VALUES (@venta, @producto, @cantidad, @precio,
+                            (SELECT Costo FROM Producto WHERE Id = @producto), @subtotal);
                     """, tx))
                 {
                     cmd.Param("@venta", venta.Id).Param("@producto", d.Producto.Id)
@@ -138,7 +139,7 @@ public class VentaSqlRepository : IVentaRepository
     {
         using var cn = _fabrica.Abrir();
         using var cmd = cn.Comando("""
-            SELECT d.ProductoId, p.Nombre, p.Marca, d.Cantidad, d.PrecioUnitario
+            SELECT d.ProductoId, p.Nombre, p.Marca, d.Cantidad, d.PrecioUnitario, d.CostoUnitario
             FROM DetalleVenta d
             INNER JOIN Producto p ON p.Id = d.ProductoId
             WHERE d.VentaId = @venta
@@ -154,7 +155,8 @@ public class VentaSqlRepository : IVentaRepository
                     Id = r.Entero("ProductoId"),
                     Nombre = r.Texto("Nombre"),
                     Marca = r.Texto("Marca"),
-                    Precio = r.Decimal("PrecioUnitario") // precio al momento de la venta
+                    Precio = r.Decimal("PrecioUnitario"), // precio al momento de la venta
+                    Costo = r.Decimal("CostoUnitario")    // costo al momento de la venta
                 },
                 Cantidad = r.Entero("Cantidad")
             });
