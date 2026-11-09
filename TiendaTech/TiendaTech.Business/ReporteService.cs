@@ -8,12 +8,29 @@ public interface IReporteService
     List<ProductoVendido> ProductosMasVendidos(DateTime desde, DateTime hasta);
     List<VentasPorVendedor> VentasPorVendedor(DateTime desde, DateTime hasta);
     void ExportarExcel(DateTime desde, DateTime hasta, string rutaArchivo);
+    // Rango con el que se abre el reporte: siempre incluye la venta más reciente
+    (DateTime Desde, DateTime Hasta) RangoPorDefecto();
 }
 
 public class ReporteService : IReporteService
 {
     private readonly IReporteRepository _repo;
     public ReporteService(IReporteRepository repo) => _repo = repo;
+
+    // Si este mes ya hay ventas: del 1 del mes a hoy. Si no, desde el 1 del mes de la última venta,
+    // así la pantalla nunca se abre vacía cuando existen ventas anteriores.
+    public (DateTime Desde, DateTime Hasta) RangoPorDefecto()
+    {
+        var hoy = DateTime.Today;
+        var ultima = _repo.FechaUltimaVenta();
+        if (ultima == null) return (new DateTime(hoy.Year, hoy.Month, 1), hoy);
+
+        var u = ultima.Value.Date;
+        var desde = new DateTime(u.Year, u.Month, 1);
+        var inicioMes = new DateTime(hoy.Year, hoy.Month, 1);
+        if (desde > inicioMes) desde = inicioMes;
+        return (desde, u > hoy ? u : hoy);
+    }
 
     public List<ProductoVendido> ProductosMasVendidos(DateTime desde, DateTime hasta)
     {
@@ -49,20 +66,21 @@ public class ReporteService : IReporteService
         resumen.Filas.Add(new object[] { "Subtotal (S/)", ventas.Sum(v => v.Subtotal) });
         resumen.Filas.Add(new object[] { "Descuentos (S/)", ventas.Sum(v => v.Descuento) });
         resumen.Filas.Add(new object[] { "Total vendido (S/)", ventas.Sum(v => v.Total) });
+        resumen.Filas.Add(new object[] { "Ganancia (S/)", ventas.Sum(v => v.Ganancia) });
 
         var hojaVentas = new HojaExcel("Ventas",
-            new[] { "N° venta", "Fecha", "Cliente", "Vendedor", "Unidades", "Subtotal (S/)", "Descuento (S/)", "Total (S/)" },
-            new[] { 10.0, 18, 26, 14, 10, 14, 14, 14 });
+            new[] { "N° venta", "Fecha", "Cliente", "Vendedor", "Unidades", "Subtotal (S/)", "Descuento (S/)", "Total (S/)", "Ganancia (S/)" },
+            new[] { 10.0, 18, 26, 14, 10, 14, 14, 14, 14 });
         foreach (var v in ventas)
-            hojaVentas.Filas.Add(new object[] { v.Id, v.Fecha, v.Cliente, v.Vendedor, v.Unidades, v.Subtotal, v.Descuento, v.Total });
+            hojaVentas.Filas.Add(new object[] { v.Id, v.Fecha, v.Cliente, v.Vendedor, v.Unidades, v.Subtotal, v.Descuento, v.Total, v.Ganancia });
 
         var hojaProductos = new HojaExcel("Productos mas vendidos",
-            new[] { "Producto", "Unidades", "Importe (S/)" }, new[] { 32.0, 12, 16 });
-        foreach (var p in productos) hojaProductos.Filas.Add(new object[] { p.Producto, p.Unidades, p.Importe });
+            new[] { "Producto", "Unidades", "Importe (S/)", "Ganancia (S/)" }, new[] { 32.0, 12, 16, 16 });
+        foreach (var p in productos) hojaProductos.Filas.Add(new object[] { p.Producto, p.Unidades, p.Importe, p.Ganancia });
 
         var hojaVendedores = new HojaExcel("Ventas por vendedor",
-            new[] { "Vendedor", "N° ventas", "Total (S/)" }, new[] { 18.0, 12, 16 });
-        foreach (var v in vendedores) hojaVendedores.Filas.Add(new object[] { v.Vendedor, v.Ventas, v.Total });
+            new[] { "Vendedor", "N° ventas", "Total (S/)", "Ganancia (S/)" }, new[] { 18.0, 12, 16, 16 });
+        foreach (var v in vendedores) hojaVendedores.Filas.Add(new object[] { v.Vendedor, v.Ventas, v.Total, v.Ganancia });
 
         ExportadorExcel.Guardar(rutaArchivo, new[] { resumen, hojaVentas, hojaProductos, hojaVendedores });
     }
