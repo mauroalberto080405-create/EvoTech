@@ -1,3 +1,4 @@
+
 using TiendaTech.Data;
 using TiendaTech.Models;
 
@@ -8,8 +9,11 @@ public interface IVentaService
     decimal CalcularDescuento(decimal subtotal);
     Venta Registrar(Cliente? cliente, List<DetalleVenta> detalles);
     List<VentaResumen> ListarHistorial();
-    List<DetalleVenta> ObtenerDetalles(int ventaId);
+
+    // NUEVO: Obtener las ventas de un cliente específico
     List<VentaResumen> ListarPorCliente(int clienteId);
+
+    List<DetalleVenta> ObtenerDetalles(int ventaId);
     void Anular(int ventaId);
 }
 
@@ -19,46 +23,73 @@ public class VentaService : IVentaService
     private readonly IDescuento _descuento;
     private readonly ISesion _sesion;
 
-    public List<VentaResumen> ListarPorCliente(int clienteId)
-    {
-    if (clienteId <= 0)
-        throw new ArgumentException("Cliente no válido.");
-
-    return _repo.ListarPorCliente(clienteId);
-    }
-
-    // DIP: recibe abstracciones por constructor; no crea "new VentaSqlRepository()" ni "new DescuentoPorMonto()"
-    public VentaService(IVentaRepository repo, IDescuento descuento, ISesion sesion)
+    // DIP: recibe abstracciones por constructor
+    public VentaService(
+        IVentaRepository repo,
+        IDescuento descuento,
+        ISesion sesion)
     {
         _repo = repo;
         _descuento = descuento;
         _sesion = sesion;
     }
 
-    public decimal CalcularDescuento(decimal subtotal) => _descuento.Calcular(subtotal);
-    public List<VentaResumen> ListarHistorial() => _repo.ListarResumen();
-    public List<DetalleVenta> ObtenerDetalles(int ventaId) => _repo.ObtenerDetalles(ventaId);
+    public decimal CalcularDescuento(decimal subtotal)
+        => _descuento.Calcular(subtotal);
 
-    // Anula la venta: devuelve el stock y la deja marcada como anulada (no se borra)
-    public void Anular(int ventaId)
+    public List<VentaResumen> ListarHistorial()
+        => _repo.ListarResumen();
+
+    // NUEVO: Consulta las compras de un cliente por su ID
+    public List<VentaResumen> ListarPorCliente(int clienteId)
     {
-        if (ventaId <= 0) throw new ArgumentException("Seleccione una venta.");
-        if (_sesion.UsuarioActual == null) throw new ArgumentException("No hay un usuario con sesión iniciada.");
+        if (clienteId <= 0)
+            throw new ArgumentException("Cliente no válido.");
 
-        _repo.Anular(ventaId); // el repositorio valida que exista y que no esté anulada
+        return _repo.ListarPorCliente(clienteId);
     }
 
-    public Venta Registrar(Cliente? cliente, List<DetalleVenta> detalles)
+    public List<DetalleVenta> ObtenerDetalles(int ventaId)
+        => _repo.ObtenerDetalles(ventaId);
+
+    // Anula la venta y devuelve el stock
+    public void Anular(int ventaId)
     {
-        if (cliente == null) throw new ArgumentException("Seleccione un cliente.");
-        if (detalles.Count == 0) throw new ArgumentException("Agregue al menos un producto.");
-        if (_sesion.UsuarioActual == null) throw new ArgumentException("No hay un usuario con sesión iniciada.");
+        if (ventaId <= 0)
+            throw new ArgumentException("Seleccione una venta.");
+
+        if (_sesion.UsuarioActual == null)
+            throw new ArgumentException(
+                "No hay un usuario con sesión iniciada.");
+
+        _repo.Anular(ventaId);
+    }
+
+    // Registra una venta con sus detalles
+    public Venta Registrar(
+        Cliente? cliente,
+        List<DetalleVenta> detalles)
+    {
+        if (cliente == null)
+            throw new ArgumentException("Seleccione un cliente.");
+
+        if (detalles.Count == 0)
+            throw new ArgumentException(
+                "Agregue al menos un producto.");
+
+        if (_sesion.UsuarioActual == null)
+            throw new ArgumentException(
+                "No hay un usuario con sesión iniciada.");
 
         foreach (var d in detalles)
+        {
             if (d.Cantidad > d.Producto.Stock)
-                throw new ArgumentException($"Stock insuficiente de {d.Producto.Nombre}.");
+                throw new ArgumentException(
+                    $"Stock insuficiente de {d.Producto.Nombre}.");
+        }
 
         var subtotal = detalles.Sum(d => d.Subtotal);
+
         var venta = new Venta
         {
             Cliente = cliente,
@@ -68,7 +99,9 @@ public class VentaService : IVentaService
             Descuento = _descuento.Calcular(subtotal)
         };
 
-        _repo.Agregar(venta); // guarda venta + detalle y descuenta stock
+        // Guarda venta, detalles y descuenta stock
+        _repo.Agregar(venta);
+
         return venta;
     }
 }
