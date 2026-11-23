@@ -9,6 +9,7 @@ public interface IVentaService
     Venta Registrar(Cliente? cliente, List<DetalleVenta> detalles);
     List<VentaResumen> ListarHistorial();
     List<DetalleVenta> ObtenerDetalles(int ventaId);
+    List<VentaResumen> ListarPorCliente(int clienteId);
     void Anular(int ventaId);
 }
 
@@ -17,6 +18,14 @@ public class VentaService : IVentaService
     private readonly IVentaRepository _repo;
     private readonly IDescuento _descuento;
     private readonly ISesion _sesion;
+
+    public List<VentaResumen> ListarPorCliente(int clienteId)
+    {
+    if (clienteId <= 0)
+        throw new ArgumentException("Cliente no válido.");
+
+    return _repo.ListarPorCliente(clienteId);
+    }
 
     // DIP: recibe abstracciones por constructor; no crea "new VentaSqlRepository()" ni "new DescuentoPorMonto()"
     public VentaService(IVentaRepository repo, IDescuento descuento, ISesion sesion)
