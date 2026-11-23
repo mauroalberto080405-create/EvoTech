@@ -7,12 +7,14 @@ namespace TiendaTech.UI;
 public class FrmClientes : FormBase
 {
     private readonly IClienteService _service;
+    private readonly IVentaService _ventaService;
     private readonly TextBox _txtNombre, _txtDocumento, _txtTelefono, _txtBuscar;
     private readonly DataGridView _grid;
 
-    public FrmClientes(IClienteService service)
+    public FrmClientes(IClienteService service, IVentaService ventaService)
     {
         _service = service;
+        _ventaService = ventaService;
         Text = "Clientes";
         ClientSize = new Size(640, 460);
         StartPosition = FormStartPosition.CenterScreen;
