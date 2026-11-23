@@ -1,3 +1,4 @@
+
 using TiendaTech.Models;
 
 namespace TiendaTech.Data;
@@ -28,7 +29,8 @@ public class ProveedorMemoryRepository : MemoryRepository<Proveedor>, IProveedor
     public void Actualizar(Proveedor p)
     {
         var actual = ObtenerPorId(p.Id) ?? throw new InvalidOperationException("El proveedor ya no existe.");
-        actual.Empresa = p.Empresa; actual.Telefono = p.Telefono;
+        actual.Empresa = p.Empresa;
+        actual.Telefono = p.Telefono;
     }
 }
 
@@ -46,8 +48,13 @@ public class ProductoMemoryRepository : MemoryRepository<Producto>, IProductoRep
     public void Actualizar(Producto p)
     {
         var actual = ObtenerPorId(p.Id) ?? throw new InvalidOperationException("El producto ya no existe.");
-        actual.Nombre = p.Nombre; actual.Marca = p.Marca; actual.Precio = p.Precio; actual.Costo = p.Costo; actual.StockMinimo = p.StockMinimo;
-        actual.ProveedorId = p.ProveedorId; actual.ProveedorNombre = p.ProveedorNombre;
+        actual.Nombre = p.Nombre;
+        actual.Marca = p.Marca;
+        actual.Precio = p.Precio;
+        actual.Costo = p.Costo;
+        actual.StockMinimo = p.StockMinimo;
+        actual.ProveedorId = p.ProveedorId;
+        actual.ProveedorNombre = p.ProveedorNombre;
     }
 }
 
@@ -89,7 +96,10 @@ public class VentaMemoryRepository : IVentaRepository
     public void Agregar(Venta venta)
     {
         venta.Id = _ventas.Count + 1;
-        foreach (var d in venta.Detalles) d.Producto.Stock -= d.Cantidad;
+
+        foreach (var d in venta.Detalles)
+            d.Producto.Stock -= d.Cantidad;
+
         _ventas.Add(venta);
     }
 
@@ -97,11 +107,38 @@ public class VentaMemoryRepository : IVentaRepository
         .OrderByDescending(v => v.Id)
         .Select(v => new VentaResumen
         {
-            Id = v.Id, Fecha = v.Fecha,
-            Cliente = v.Cliente?.Nombre ?? "", Vendedor = v.Vendedor?.NombreUsuario ?? "",
+            Id = v.Id,
+            Fecha = v.Fecha,
+            Cliente = v.Cliente?.Nombre ?? "",
+            Vendedor = v.Vendedor?.NombreUsuario ?? "",
             Unidades = v.Detalles.Sum(d => d.Cantidad),
-            Subtotal = v.Subtotal, Descuento = v.Descuento, Total = v.Total, Anulada = v.Anulada
+            Subtotal = v.Subtotal,
+            Descuento = v.Descuento,
+            Total = v.Total,
+            Anulada = v.Anulada
         }).ToList();
+
+    // CASTILLO: MÉTODO AGREGADO PARA LA FICHA DEL CLIENTE
+    public List<VentaResumen> ListarPorCliente(int clienteId)
+    {
+        return _ventas
+            .Where(v => v.Cliente?.Id == clienteId)
+            .OrderByDescending(v => v.Fecha)
+            .ThenByDescending(v => v.Id)
+            .Select(v => new VentaResumen
+            {
+                Id = v.Id,
+                Fecha = v.Fecha,
+                Cliente = v.Cliente?.Nombre ?? "",
+                Vendedor = v.Vendedor?.NombreUsuario ?? "",
+                Unidades = v.Detalles.Sum(d => d.Cantidad),
+                Subtotal = v.Subtotal,
+                Descuento = v.Descuento,
+                Total = v.Total,
+                Anulada = v.Anulada
+            })
+            .ToList();
+    }
 
     public List<DetalleVenta> ObtenerDetalles(int ventaId) =>
         _ventas.FirstOrDefault(v => v.Id == ventaId)?.Detalles.ToList() ?? new();
@@ -109,8 +146,13 @@ public class VentaMemoryRepository : IVentaRepository
     public void Anular(int ventaId)
     {
         var venta = _ventas.FirstOrDefault(v => v.Id == ventaId);
-        if (venta == null || venta.Anulada) throw new InvalidOperationException("La venta no existe o ya fue anulada.");
-        foreach (var d in venta.Detalles) d.Producto.Stock += d.Cantidad; // devuelve el stock
+
+        if (venta == null || venta.Anulada)
+            throw new InvalidOperationException("La venta no existe o ya fue anulada.");
+
+        foreach (var d in venta.Detalles)
+            d.Producto.Stock += d.Cantidad;
+
         venta.Anulada = true;
     }
 }
@@ -125,7 +167,10 @@ public class CompraMemoryRepository : ICompraRepository
     public void Agregar(Compra compra)
     {
         compra.Id = _compras.Count + 1;
-        foreach (var d in compra.Detalles) d.Producto.Stock += d.Cantidad;
+
+        foreach (var d in compra.Detalles)
+            d.Producto.Stock += d.Cantidad;
+
         _compras.Add(compra);
     }
 
@@ -133,44 +178,78 @@ public class CompraMemoryRepository : ICompraRepository
         .OrderByDescending(c => c.Id)
         .Select(c => new CompraResumen
         {
-            Id = c.Id, Fecha = c.Fecha,
-            Proveedor = c.Proveedor?.Empresa ?? "", NumeroDocumento = c.NumeroDocumento,
+            Id = c.Id,
+            Fecha = c.Fecha,
+            Proveedor = c.Proveedor?.Empresa ?? "",
+            NumeroDocumento = c.NumeroDocumento,
             Usuario = c.Usuario?.NombreUsuario ?? "",
-            Unidades = c.Detalles.Sum(d => d.Cantidad), Total = c.Total
+            Unidades = c.Detalles.Sum(d => d.Cantidad),
+            Total = c.Total
         }).ToList();
 
     public List<DetalleCompra> ObtenerDetalles(int compraId) =>
         _compras.FirstOrDefault(c => c.Id == compraId)?.Detalles.ToList() ?? new();
 }
 
-// Calcula los reportes a partir de CUALQUIER IVentaRepository (otra muestra de DIP)
+// Calcula los reportes a partir de cualquier IVentaRepository.
 public class ReporteMemoryRepository : IReporteRepository
 {
     private readonly IVentaRepository _ventas;
+
     public ReporteMemoryRepository(IVentaRepository ventas) => _ventas = ventas;
 
-    private List<VentaResumen> EnRango(DateTime desde, DateTime hasta) => _ventas.ListarResumen()
-        .Where(v => !v.Anulada && v.Fecha >= desde.Date && v.Fecha < hasta.Date.AddDays(1)).ToList();
+    private List<VentaResumen> EnRango(DateTime desde, DateTime hasta) =>
+        _ventas.ListarResumen()
+            .Where(v => !v.Anulada &&
+                        v.Fecha >= desde.Date &&
+                        v.Fecha < hasta.Date.AddDays(1))
+            .ToList();
 
-    public List<ProductoVendido> ProductosMasVendidos(DateTime desde, DateTime hasta) => EnRango(desde, hasta)
-        .SelectMany(v => _ventas.ObtenerDetalles(v.Id))
-        .GroupBy(d => d.NombreProducto)
-        .Select(g => new ProductoVendido { Producto = g.Key, Unidades = g.Sum(d => d.Cantidad), Importe = g.Sum(d => d.Subtotal), Ganancia = g.Sum(d => d.Ganancia) })
-        .OrderByDescending(p => p.Unidades).ThenByDescending(p => p.Importe).ToList();
+    public List<ProductoVendido> ProductosMasVendidos(DateTime desde, DateTime hasta) =>
+        EnRango(desde, hasta)
+            .SelectMany(v => _ventas.ObtenerDetalles(v.Id))
+            .GroupBy(d => d.NombreProducto)
+            .Select(g => new ProductoVendido
+            {
+                Producto = g.Key,
+                Unidades = g.Sum(d => d.Cantidad),
+                Importe = g.Sum(d => d.Subtotal),
+                Ganancia = g.Sum(d => d.Ganancia)
+            })
+            .OrderByDescending(p => p.Unidades)
+            .ThenByDescending(p => p.Importe)
+            .ToList();
 
     public List<VentaResumen> VentasEnRango(DateTime desde, DateTime hasta)
     {
-        var lista = EnRango(desde, hasta).OrderBy(v => v.Fecha).ThenBy(v => v.Id).ToList();
-        foreach (var v in lista) v.Ganancia = _ventas.ObtenerDetalles(v.Id).Sum(d => d.Ganancia);
+        var lista = EnRango(desde, hasta)
+            .OrderBy(v => v.Fecha)
+            .ThenBy(v => v.Id)
+            .ToList();
+
+        foreach (var v in lista)
+            v.Ganancia = _ventas.ObtenerDetalles(v.Id).Sum(d => d.Ganancia);
+
         return lista;
     }
 
     public DateTime? FechaUltimaVenta() =>
-        _ventas.ListarResumen().Where(v => !v.Anulada).Select(v => (DateTime?)v.Fecha).Max();
+        _ventas.ListarResumen()
+            .Where(v => !v.Anulada)
+            .Select(v => (DateTime?)v.Fecha)
+            .Max();
 
-    public List<VentasPorVendedor> VentasPorVendedor(DateTime desde, DateTime hasta) => EnRango(desde, hasta)
-        .GroupBy(v => v.Vendedor)
-        .Select(g => new VentasPorVendedor { Vendedor = g.Key, Ventas = g.Count(), Total = g.Sum(v => v.Total),
-            Ganancia = g.Sum(v => _ventas.ObtenerDetalles(v.Id).Sum(d => d.Ganancia)) })
-        .OrderByDescending(v => v.Total).ToList();
+    public List<VentasPorVendedor> VentasPorVendedor(DateTime desde, DateTime hasta) =>
+        EnRango(desde, hasta)
+            .GroupBy(v => v.Vendedor)
+            .Select(g => new VentasPorVendedor
+            {
+                Vendedor = g.Key,
+                Ventas = g.Count(),
+                Total = g.Sum(v => v.Total),
+                Ganancia = g.Sum(v =>
+                    _ventas.ObtenerDetalles(v.Id).Sum(d => d.Ganancia))
+            })
+            .OrderByDescending(v => v.Total)
+            .ToList();
 }

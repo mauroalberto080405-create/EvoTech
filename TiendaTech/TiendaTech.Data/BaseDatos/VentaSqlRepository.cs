@@ -135,6 +135,55 @@ public class VentaSqlRepository : IVentaRepository
         return lista;
     }
 
+
+
+public List<VentaResumen> ListarPorCliente(int clienteId)
+{
+    using var cn = _fabrica.Abrir();
+
+    using var cmd = cn.Comando("""
+        SELECT v.Id, v.Fecha,
+               c.Nombre AS Cliente,
+               u.NombreUsuario AS Vendedor,
+               COALESCE(SUM(d.Cantidad), 0) AS Unidades,
+               v.Subtotal, v.Descuento,
+               v.Total, v.Anulada
+        FROM Venta v
+        INNER JOIN Cliente c ON c.Id = v.ClienteId
+        INNER JOIN Usuario u ON u.Id = v.UsuarioId
+        LEFT JOIN DetalleVenta d ON d.VentaId = v.Id
+        WHERE v.ClienteId = @clienteId
+        GROUP BY v.Id, v.Fecha, c.Nombre,
+                 u.NombreUsuario, v.Subtotal,
+                 v.Descuento, v.Total, v.Anulada
+        ORDER BY v.Fecha DESC, v.Id DESC;
+        """).Param("@clienteId", clienteId);
+
+    using var r = cmd.ExecuteReader();
+
+    var lista = new List<VentaResumen>();
+
+    while (r.Read())
+    {
+        lista.Add(new VentaResumen
+        {
+            Id = r.Entero("Id"),
+            Fecha = r.Fecha("Fecha"),
+            Cliente = r.Texto("Cliente"),
+            Vendedor = r.Texto("Vendedor"),
+            Unidades = r.Entero("Unidades"),
+            Subtotal = r.Decimal("Subtotal"),
+            Descuento = r.Decimal("Descuento"),
+            Total = r.Decimal("Total"),
+            Anulada = r.Entero("Anulada") == 1
+        });
+    }
+
+    return lista;
+}
+
+
+
     public List<DetalleVenta> ObtenerDetalles(int ventaId)
     {
         using var cn = _fabrica.Abrir();
