@@ -39,6 +39,7 @@ static class Program
         services.AddSingleton<IVentaRepository, VentaSqlRepository>();
         services.AddSingleton<ICompraRepository, CompraSqlRepository>();
         services.AddSingleton<IReporteRepository, ReporteSqlRepository>();
+        services.AddSingleton<IReposicionRepository, ReposicionSqlRepository>();
 
         // 3. Business: servicios y regla de descuento
         //    OCP: cambiar por SinDescuento, o por: services.AddSingleton<IDescuento>(new DescuentoCampania(0.10m));
@@ -53,6 +54,7 @@ static class Program
         services.AddTransient<ICompraService, CompraService>();
         services.AddTransient<IUsuarioService, UsuarioService>();
         services.AddTransient<IReporteService, ReporteService>();
+        services.AddTransient<IReposicionService, ReposicionService>();
 
         // 4. UI: las 12 pantallas
         services.AddTransient<FrmLogin>();            // 1
@@ -67,6 +69,8 @@ static class Program
         services.AddTransient<FrmHistorialVentas>();  // 10
         services.AddTransient<FrmHistorialCompras>(); // 11
         services.AddTransient<FrmReporteVentas>();    // 12
+        // Pantallas nuevas (T4)
+        services.AddTransient<FrmPedidoReposicion>(); // Mauro: pedido de reposición por proveedor
 
         var provider = services.BuildServiceProvider();
         Application.Run(provider.GetRequiredService<FrmLogin>());

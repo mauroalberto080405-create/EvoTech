@@ -21,7 +21,7 @@ public class FrmMenuPrincipal : FormBase
         bool esAdmin = usuario?.Rol == "Administrador";
 
         Text = "EvoTech - Menú principal";
-        ClientSize = new Size(520, 430);
+        ClientSize = new Size(520, 480);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
@@ -48,11 +48,12 @@ public class FrmMenuPrincipal : FormBase
         Opcion<FrmProveedores>("Proveedores", 270, 220).Enabled = esAdmin;
         Opcion<FrmCompras>("Aumentar stock", 270, 270).Enabled = esAdmin;
         Opcion<FrmHistorialCompras>("Historial de compras", 270, 320);
+        Opcion<FrmPedidoReposicion>("Pedido de reposición", 270, 370).Enabled = esAdmin;
 
         var btnCerrar = UiHelper.Boton(this, "Cerrar sesión", 390, 18, 110, 30, color: Tema.Gris);
         btnCerrar.Click += BtnCerrarSesion_Click;
 
-        var lblBd = UiHelper.Etiqueta(this, $"● Base de datos conectada: {bd.Descripcion}", 30, 395);
+        var lblBd = UiHelper.Etiqueta(this, $"● Base de datos conectada: {bd.Descripcion}", 30, 445);
         lblBd.ForeColor = Color.ForestGreen;
     }
 
