@@ -40,6 +40,7 @@ static class Program
         services.AddSingleton<ICompraRepository, CompraSqlRepository>();
         services.AddSingleton<IReporteRepository, ReporteSqlRepository>();
         services.AddSingleton<IReposicionRepository, ReposicionSqlRepository>();
+        services.AddSingleton<IKardexRepository, KardexSqlRepository>();
 
         // 3. Business: servicios y regla de descuento
         //    OCP: cambiar por SinDescuento, o por: services.AddSingleton<IDescuento>(new DescuentoCampania(0.10m));
@@ -55,6 +56,7 @@ static class Program
         services.AddTransient<IUsuarioService, UsuarioService>();
         services.AddTransient<IReporteService, ReporteService>();
         services.AddTransient<IReposicionService, ReposicionService>();
+        services.AddTransient<IKardexService, KardexService>();
 
         // 4. UI: las 12 pantallas
         services.AddTransient<FrmLogin>();            // 1

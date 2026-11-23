@@ -9,6 +9,7 @@ namespace TiendaTech.UI;
 public class FrmProductos : FormBase
 {
     private readonly IProductoService _service;
+    private readonly IKardexService _kardex;
     private readonly TextBox _txtNombre, _txtMarca, _txtBuscar;
     private readonly NumericUpDown _nudPrecio, _nudCosto, _nudStock, _nudMinimo;
     private readonly ComboBox _cboProveedor;
@@ -17,9 +18,10 @@ public class FrmProductos : FormBase
     private readonly DataGridView _grid;
     private int _idEditando; // 0 = producto nuevo
 
-    public FrmProductos(IProductoService service, IProveedorService proveedores)
+    public FrmProductos(IProductoService service, IProveedorService proveedores, IKardexService kardex)
     {
         _service = service;
+        _kardex = kardex;
         Text = "Productos";
         ClientSize = new Size(760, 510);
         StartPosition = FormStartPosition.CenterScreen;
@@ -58,6 +60,8 @@ public class FrmProductos : FormBase
         btnLimpiar.Click += (_, _) => Limpiar();
         var btnEliminar = UiHelper.Boton(this, "Eliminar", 650, 52, 100, 32, color: Tema.Peligro);
         btnEliminar.Click += BtnEliminar_Click;
+        var btnMovimientos = UiHelper.Boton(this, "Ver movimientos", 540, 120, 210, 32, color: Tema.Primario);
+        btnMovimientos.Click += BtnMovimientos_Click;
         _lblModo = UiHelper.Etiqueta(this, "", 540, 92);
         _lblModo.Font = new Font("Segoe UI", 8.25F);
         _lblModo.ForeColor = Tema.Gris;
@@ -78,6 +82,18 @@ public class FrmProductos : FormBase
     }
 
     private void Cargar() => _grid.DataSource = _service.Buscar(_txtBuscar.Text);
+
+    // Kardex: abre el historial de movimientos (compras, ventas, anulaciones) del producto seleccionado
+    private void BtnMovimientos_Click(object? sender, EventArgs e)
+    {
+        if (_grid.CurrentRow?.DataBoundItem is not Producto p)
+        {
+            UiHelper.Error("Seleccione un producto de la lista.");
+            return;
+        }
+        using var kardex = new FrmKardex(_kardex, p.Id);
+        kardex.ShowDialog(this);
+    }
 
     // Los productos con stock igual o menor a su mínimo se pintan en rojo
     private void PintarStockBajo(object? sender, DataGridViewCellFormattingEventArgs e)
