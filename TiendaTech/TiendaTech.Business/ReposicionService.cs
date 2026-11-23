@@ -42,13 +42,13 @@ public class ReposicionService : IReposicionService
         var resumen = new HojaExcel("Resumen",
             new[] { "Proveedor", "RUC", "Teléfono", "Productos", "Unidades", "Costo estimado S/" },
             new[] { 30.0, 14.0, 12.0, 11.0, 11.0, 18.0 });
-        resumen.Filas.Add(new object[] { "Pedido de reposición – EvoTech", "", "", "", "", "" });
-        resumen.Filas.Add(new object[] { "Generado el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm"), "", "", "", "", "" });
-        resumen.Filas.Add(new object[] { "", "", "", "", "", "" });
         foreach (var g in grupos)
             resumen.Filas.Add(new object[] { g.Key.Proveedor, g.Key.RucProveedor, g.Key.TelefonoProveedor,
                                              g.Count(), g.Sum(l => l.CantidadSugerida), g.Sum(l => l.CostoEstimado) });
         resumen.Filas.Add(new object[] { "TOTAL", "", "", lineas.Count, lineas.Sum(l => l.CantidadSugerida), lineas.Sum(l => l.CostoEstimado) });
+        // Pie de página: el encabezado naranja siempre va en la fila 1, así que el título va al final
+        resumen.Filas.Add(new object[] { "", "", "", "", "", "" });
+        resumen.Filas.Add(new object[] { "Pedido de reposición – EvoTech · generado el " + DateTime.Now.ToString("dd/MM/yyyy HH:mm"), "", "", "", "", "" });
 
         var hojas = new List<HojaExcel> { resumen };
         var usados = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { resumen.Nombre };
