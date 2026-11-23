@@ -9,7 +9,7 @@ public class FrmHistorialVentas : FormBase
     private readonly IVentaService _ventas;
     private readonly DataGridView _gridVentas, _gridDetalle;
     private readonly Label _lblResumen;
-    private readonly Button _btnAnular;
+    private readonly Button _btnAnular, _btnComprobante;
 
     public FrmHistorialVentas(IVentaService ventas)
     {
@@ -21,6 +21,9 @@ public class FrmHistorialVentas : FormBase
         UiHelper.Etiqueta(this, "Historial de ventas", 20, 12, true);
         var btnActualizar = UiHelper.Boton(this, "Actualizar", 680, 16, 120, color: Tema.Secundario);
         btnActualizar.Click += (_, _) => Cargar();
+        _btnComprobante = UiHelper.Boton(this, "Ver comprobante", 375, 16, 140, color: Tema.Primario);
+        _btnComprobante.Enabled = false;
+        _btnComprobante.Click += (_, _) => VerComprobante();
         _btnAnular = UiHelper.Boton(this, "Anular venta", 530, 16, 135, color: Tema.Peligro);
         _btnAnular.Enabled = false;
         _btnAnular.Click += (_, _) => AnularSeleccionada();
@@ -73,11 +76,13 @@ public class FrmHistorialVentas : FormBase
         {
             _gridDetalle.DataSource = _ventas.ObtenerDetalles(v.Id);
             _btnAnular.Enabled = !v.Anulada; // una venta ya anulada no se puede anular otra vez
+            _btnComprobante.Enabled = true;  // el comprobante se puede ver también de ventas anuladas
         }
         else
         {
             _gridDetalle.DataSource = null;
             _btnAnular.Enabled = false;
+            _btnComprobante.Enabled = false;
         }
     }
 
@@ -87,6 +92,18 @@ public class FrmHistorialVentas : FormBase
         foreach (DataGridViewRow fila in _gridVentas.Rows)
             if (fila.DataBoundItem is VentaResumen v && v.Anulada)
                 fila.DefaultCellStyle.ForeColor = Tema.Peligro;
+    }
+
+    // Abre la boleta de la venta seleccionada (activa o anulada)
+    private void VerComprobante()
+    {
+        if (_gridVentas.CurrentRow?.DataBoundItem is not VentaResumen v) return;
+        try
+        {
+            var detalles = _ventas.ObtenerDetalles(v.Id);
+            new FrmComprobanteVenta(v, detalles).ShowDialog(this);
+        }
+        catch (Exception ex) { UiHelper.ErrorBd(ex); }
     }
 
     private void AnularSeleccionada()
